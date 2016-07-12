@@ -1346,11 +1346,11 @@ recurseDraw(const unichar *chars, CGGlyph *glyphs, CGPoint *positions,
 
         // Draw bottom of bevel
         CGRect bottom_a = { {x, y}, {cells*cellSize.width, 1.5} };
-        CGContextSetRGBFillColor(context, 0.0f, 0.0f, 0.0f, 0.35f);
+        CGContextSetRGBFillColor(context, 0.4f, 0.4f, 0.4f, 0.35f);
         CGContextFillRect(context, bottom_a);
 
         CGRect bottom_b = { {x, y}, {cells*cellSize.width, 0.5} };
-	CGContextSetRGBFillColor(context, 0.0f, 0.0f, 0.0f, 0.45f);
+        CGContextSetRGBFillColor(context, 0.4f, 0.4f, 0.4f, 0.45f);
         CGContextFillRect(context, bottom_b);
     } else if (flags & DRAW_UNDERC) {
         // Draw curly underline
