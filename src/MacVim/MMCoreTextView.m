@@ -42,7 +42,8 @@
 #define DRAW_UNDERC               0x08    /* draw undercurl text */
 #define DRAW_ITALIC               0x10    /* draw italic text */
 #define DRAW_CURSOR               0x20
-#define DRAW_WIDE                 0x40    /* draw wide text */
+#define DRAW_BEVEL                0x40
+#define DRAW_WIDE                 0x80    /* draw wide text */
 
 #if MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_8
 #define kCTFontOrientationDefault kCTFontDefaultOrientation
@@ -821,6 +822,7 @@ defaultAdvanceForFont(NSFont *font)
                 toRow:(int)row2 column:(int)col2
 {
     NSRect frame = [self bounds];
+
     return NSMakeRect(
             insetSize.width + col1*cellSize.width,
             frame.size.height - insetSize.height - (row2+1)*cellSize.height,
@@ -1291,6 +1293,9 @@ recurseDraw(const unichar *chars, CGGlyph *glyphs, CGPoint *positions,
     float y = frame.size.height - insetSize.height - (1+row)*cellSize.height;
     float w = cellSize.width;
 
+    // dphase
+    // NSLog(@"string! [%#x] %S", flags, chars);
+
     if (flags & DRAW_WIDE) {
         // NOTE: It is assumed that either all characters in 'chars' are wide
         // or all are normal width.
@@ -1322,12 +1327,31 @@ recurseDraw(const unichar *chars, CGGlyph *glyphs, CGPoint *positions,
         CGContextSetBlendMode(context, kCGBlendModeNormal);
     }
 
+
     if (flags & DRAW_UNDERL) {
         // Draw underline
         CGRect rect = { {x, y+0.4*fontDescent}, {cells*cellSize.width, 1} };
         CGContextSetRGBFillColor(context, RED(sp), GREEN(sp), BLUE(sp),
                                  ALPHA(sp));
         CGContextFillRect(context, rect);
+    } else if (flags & DRAW_BEVEL) {
+        // Draw top of bevel
+        CGRect top_a = { {x, y + (cellSize.height - 1.0)}, {cells * cellSize.width, 1.0} };
+        CGContextSetRGBFillColor(context, 1.0f, 1.0f, 1.0f, 0.40f);
+        CGContextFillRect(context, top_a);
+
+        CGRect top_b = { {x, y + (cellSize.height - 1.25)}, {cells * cellSize.width, 1.25} };
+        CGContextSetRGBFillColor(context, 1.0f, 1.0f, 1.0f, 0.30f);
+        CGContextFillRect(context, top_b);
+
+        // Draw bottom of bevel
+        CGRect bottom_a = { {x, y}, {cells*cellSize.width, 1.5} };
+        CGContextSetRGBFillColor(context, 0.0f, 0.0f, 0.0f, 0.35f);
+        CGContextFillRect(context, bottom_a);
+
+        CGRect bottom_b = { {x, y}, {cells*cellSize.width, 0.5} };
+	CGContextSetRGBFillColor(context, 0.0f, 0.0f, 0.0f, 0.45f);
+        CGContextFillRect(context, bottom_b);
     } else if (flags & DRAW_UNDERC) {
         // Draw curly underline
         int k;
@@ -1371,8 +1395,9 @@ recurseDraw(const unichar *chars, CGGlyph *glyphs, CGPoint *positions,
     CTFontRef fontRef = (CTFontRef)(flags & DRAW_WIDE ? [fontWide retain]
                                                       : [font retain]);
     unsigned traits = 0;
-    if (flags & DRAW_ITALIC)
+    if (flags & DRAW_ITALIC) {
         traits |= kCTFontItalicTrait;
+    }
     if (flags & DRAW_BOLD)
         traits |= kCTFontBoldTrait;
 

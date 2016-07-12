@@ -7888,7 +7888,7 @@ screen_start_highlight(int attr)
 		out_str(T_ME);
 	    if ((attr & HL_STANDOUT) && T_SO != NULL)	/* standout */
 		out_str(T_SO);
-	    if ((attr & (HL_UNDERLINE | HL_UNDERCURL)) && T_US != NULL)
+	    if ((attr & (HL_UNDERLINE | HL_BEVEL | HL_UNDERCURL)) && T_US != NULL)
 						   /* underline or undercurl */
 		out_str(T_US);
 	    if ((attr & HL_ITALIC) && T_CZH != NULL)	/* italic */
@@ -8005,7 +8005,7 @@ screen_stop_highlight(void)
 		else
 		    out_str(T_SE);
 	    }
-	    if (screen_attr & (HL_UNDERLINE | HL_UNDERCURL))
+	    if (screen_attr & (HL_UNDERLINE | HL_BEVEL | HL_UNDERCURL))
 	    {
 		if (STRCMP(T_UE, T_ME) == 0)
 		    do_ME = TRUE;

@@ -84,10 +84,10 @@ static int include_link = 0;	/* when 2 include "link" and "clear" */
  * following names, separated by commas (but no spaces!).
  */
 static char *(hl_name_table[]) =
-    {"bold", "standout", "underline", "undercurl",
+    {"bold", "standout", "underline", "undercurl", "bevel",
 				      "italic", "reverse", "inverse", "NONE"};
 static int hl_attr_table[] =
-    {HL_BOLD, HL_STANDOUT, HL_UNDERLINE, HL_UNDERCURL, HL_ITALIC, HL_INVERSE, HL_INVERSE, 0};
+    {HL_BOLD, HL_STANDOUT, HL_UNDERLINE, HL_UNDERCURL, HL_BEVEL, HL_ITALIC, HL_INVERSE, HL_INVERSE, 0};
 
 static int get_attr_entry(garray_T *table, attrentry_T *aep);
 static void syn_unadd_group(void);
@@ -9667,6 +9667,8 @@ highlight_changed(void)
 				break;
 		    case 'c':	attr |= HL_UNDERCURL;
 				break;
+                    case 'e':   attr |= HL_BEVEL;
+                                break;
 		    case ':':	++p;		    /* highlight group name */
 				if (attr || *p == NUL)	 /* no combinations */
 				    return FAIL;
