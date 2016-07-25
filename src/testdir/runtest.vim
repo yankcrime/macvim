@@ -42,9 +42,20 @@ if &lines < 24 || &columns < 80
   cquit
 endif
 
+" Common with all tests on all systems.
+source setup.vim
+
 " For consistency run all tests with 'nocompatible' set.
 " This also enables use of line continuation.
 set nocp viminfo+=nviminfo
+
+" Use utf-8 or latin1 be default, instead of whatever the system default
+" happens to be.  Individual tests can overrule this at the top of the file.
+if has('multi_byte')
+  set encoding=utf-8
+else
+  set encoding=latin1
+endif
 
 " Avoid stopping at the "hit enter" prompt
 set nomore
@@ -54,9 +65,6 @@ lang mess C
 
 " Always use forward slashes.
 set shellslash
-
-" Make sure $HOME does not get read or written.
-let $HOME = '/does/not/exist'
 
 let s:srcdir = expand('%:p:h:h')
 
@@ -117,7 +125,7 @@ else
 endif
 
 " Names of flaky tests.
-let s:flaky = ['Test_reltime()']
+let s:flaky = ['Test_reltime()', 'Test_nb_basic()']
 
 " Locate Test_ functions and execute them.
 set nomore

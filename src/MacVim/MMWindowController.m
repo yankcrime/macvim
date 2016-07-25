@@ -81,10 +81,10 @@
 
 
 #if MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_10
-# define TABBAR_STYLE_UNIFINED @"Yosemite"
+# define TABBAR_STYLE_UNIFIED  @"Yosemite"
 # define TABBAR_STYLE_METAL    @"Yosemite"
 #else
-# define TABBAR_STYLE_UNIFINED @"Unified"
+# define TABBAR_STYLE_UNIFIED  @"Unified"
 # define TABBAR_STYLE_METAL    @"Metal"
 #endif
 
@@ -105,6 +105,7 @@
 - (BOOL)maximizeWindow:(int)options;
 - (void)applicationDidChangeScreenParameters:(NSNotification *)notification;
 - (void)enterNativeFullScreen;
+- (void)processAfterWindowPresentedQueue;
 @end
 
 
@@ -236,6 +237,8 @@
     [windowAutosaveKey release];  windowAutosaveKey = nil;
     [vimView release];  vimView = nil;
     [toolbar release];  toolbar = nil;
+    // in case processAfterWindowPresentedQueue wasn't called
+    [afterWindowPresentedQueue release];  afterWindowPresentedQueue = nil;
 
     [super dealloc];
 }
@@ -343,6 +346,9 @@
     // Flag that the window is now placed on screen.  From now on it is OK for
     // code to depend on the screen state.  (Such as constraining views etc.)
     windowPresented = YES;
+
+    // Process deferred blocks
+    [self processAfterWindowPresentedQueue];
 
     if (fullScreenWindow) {
         // Delayed entering of full-screen happens here (a ":set fu" in a
@@ -1181,7 +1187,7 @@
         [[window animator] setAlphaValue:0];
     } completionHandler:^{
         [window setStyleMask:([window styleMask] | NSFullScreenWindowMask)];
-        [[vimView tabBarControl] setStyleNamed:TABBAR_STYLE_UNIFINED];
+        [[vimView tabBarControl] setStyleNamed:TABBAR_STYLE_UNIFIED];
         [self updateTablineSeparator];
 
         // Stay dark for some time to wait for things to sync, then do the full screen operation
@@ -1207,6 +1213,9 @@
     // Store window frame and use it when exiting full-screen.
     preFullScreenFrame = [decoratedWindow frame];
 
+    // The separator should never be visible in fullscreen or split-screen.
+    [decoratedWindow hideTablineSeparator:YES];
+  
     // ASSUMPTION: fullScreenEnabled always reflects the state of Vim's 'fu'.
     if (!fullScreenEnabled) {
         ASLogDebug(@"Full-screen out of sync, tell Vim to set 'fu'");
@@ -1306,6 +1315,8 @@
         // full-screen by moving the window out from Split View.
         [vimController sendMessage:BackingPropertiesChangedMsgID data:nil];
     }
+  
+    [self updateTablineSeparator];
 }
 
 - (void)windowDidFailToExitFullScreen:(NSWindow *)window
@@ -1317,12 +1328,25 @@
     fullScreenEnabled = YES;
     [window setAlphaValue:1];
     [window setStyleMask:([window styleMask] | NSFullScreenWindowMask)];
-    [[vimView tabBarControl] setStyleNamed:TABBAR_STYLE_UNIFINED];
+    [[vimView tabBarControl] setStyleNamed:TABBAR_STYLE_UNIFIED];
     [self updateTablineSeparator];
     [self maximizeWindow:fullScreenOptions];
 }
 
 #endif // (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_7)
+
+- (void)runAfterWindowPresentedUsingBlock:(void (^)(void))block
+{
+    if (windowPresented) { // no need to defer block, just run it now
+        block();
+        return;
+    }
+
+    // run block later
+    if (afterWindowPresentedQueue == nil)
+        afterWindowPresentedQueue = [[NSMutableArray alloc] init];
+    [afterWindowPresentedQueue addObject:[block copy]];
+}
 
 @end // MMWindowController
 
@@ -1660,5 +1684,12 @@
     [decoratedWindow realToggleFullScreen:self];
 }
 
+- (void)processAfterWindowPresentedQueue
+{
+    for (void (^block)(void) in afterWindowPresentedQueue)
+        block();
+
+    [afterWindowPresentedQueue release]; afterWindowPresentedQueue = nil;
+}
 @end // MMWindowController (Private)
 
